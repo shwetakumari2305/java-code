@@ -1,4 +1,4 @@
-FORM openjdk
+FROM openjdk
 WORKDIR /usr/java
 EXPOSE 8080
 COPY ./target/jenkins-0.0.1-SNAPSHOT.jar  /usr/java
