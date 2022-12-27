@@ -1,0 +1,30 @@
+node{
+    stage('SCM checkout'){
+        git branch: 'main', url: 'https://github.com/shwetakumari2305/java-code.git'
+        
+    }
+    stage('Mvn Package'){
+        def mvnHome = tool name: 'maven1', type: 'maven'
+        def mvnCMD = "${mvnHome}/bin/mvn" 
+        sh "${mvnCMD} clean package"
+    }
+    stage('Build Docker Image'){
+        sh 'docker build -t shwetashukla23/javaapp:latest .'
+    }
+    stage('Push Docker Image'){
+        withCredentials([string(credentialsId: 'dockerhub_password', variable: 'dockerhubpwd')]) {
+        sh "docker login -u shwetashukla23 -p ${dockerhubpwd}"
+       }
+        sh 'docker push shwetashukla23/javaapp:latest'
+    }
+    stage('Run Container on Dev Server'){
+        def dockerRun = 'docker run -p 80:80 -d --name javaapp shwetashukla23/javaapp:latest'
+        
+        sshagent(['dev-server']) {
+           sh 'ssh -o StrictHostKeyChecking=no ec2-user@172.31.10.48 docker rm -f javaapp'
+           sh 'ssh -o StrictHostKeyChecking=no ec2-user@172.31.10.48 docker rmi -f shwetashukla23/javaapp:latest'
+            sh "ssh -o StrictHostKeyChecking=no ec2-user@172.31.10.48 ${dockerRun}"
+        }
+    }
+}
+
